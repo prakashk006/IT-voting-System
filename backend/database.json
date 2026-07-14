@@ -1,0 +1,133 @@
+{
+  "students": [
+    {
+      "id": "IT202601",
+      "name": "Aakash R",
+      "email": "aakash@it.edu",
+      "dob": "15/08/2005",
+      "password": "$2a$10$dipIAq/immot8cf0uolf.O2T0ZdgF179AIHmFGM6w/im4PbgFTetK",
+      "failed_attempts": 0,
+      "is_blocked": 0,
+      "has_voted": 0,
+      "otp": null,
+      "otp_expiry": null
+    },
+    {
+      "id": "IT202602",
+      "name": "Bhavana S",
+      "email": "bhavana@it.edu",
+      "dob": "22/10/2006",
+      "password": "$2a$10$Bk.YTQ3NBfMS3z7S7MNaCuM0UhSAKSxMotPHPLxhwtaQerRfnbAVO",
+      "failed_attempts": 0,
+      "is_blocked": 0,
+      "has_voted": 0,
+      "otp": null,
+      "otp_expiry": null
+    },
+    {
+      "id": "IT202603",
+      "name": "Chandru M",
+      "email": "chandru@it.edu",
+      "dob": "05/12/2005",
+      "password": "$2a$10$y7NgOnqSY4Av1xgVLt4y9.ahT6rPWp2pgCiabXo78kcrafNPLR36G",
+      "failed_attempts": 0,
+      "is_blocked": 0,
+      "has_voted": 0,
+      "otp": null,
+      "otp_expiry": null
+    },
+    {
+      "id": "IT202604",
+      "name": "Deepa K",
+      "email": "deepa@it.edu",
+      "dob": "19/04/2006",
+      "password": "$2a$10$qt1b6/TUdgPE6dzkUBjVhOatPWbkxvI8BDkEN/l8TKFMPLJ/2ZSlC",
+      "failed_attempts": 0,
+      "is_blocked": 0,
+      "has_voted": 0,
+      "otp": null,
+      "otp_expiry": null
+    },
+    {
+      "id": "IT202605",
+      "name": "Eshwar P",
+      "email": "eshwar@it.edu",
+      "dob": "30/09/2005",
+      "password": "$2a$10$cpXIyuEThDgaLWlw4mqG6.p6yJU2Sf5oDESYXBXrIUHGrXw.BS/bC",
+      "failed_attempts": 0,
+      "is_blocked": 0,
+      "has_voted": 0,
+      "otp": null,
+      "otp_expiry": null
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Aravind Swamy",
+      "position": "President",
+      "year_class": "4th Year IT-A",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=aravind",
+      "id": 1
+    },
+    {
+      "name": "Meera Jasmine",
+      "position": "President",
+      "year_class": "4th Year IT-B",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=meera",
+      "id": 2
+    },
+    {
+      "name": "Sanjay Dutt",
+      "position": "Vice-President",
+      "year_class": "3rd Year IT-A",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=sanjay",
+      "id": 3
+    },
+    {
+      "name": "Sneha Reddy",
+      "position": "Vice-President",
+      "year_class": "3rd Year IT-B",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=sneha",
+      "id": 4
+    },
+    {
+      "name": "Rahul Dravid",
+      "position": "Secretary",
+      "year_class": "3rd Year IT-A",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=rahul",
+      "id": 5
+    },
+    {
+      "name": "Divya Spandana",
+      "position": "Secretary",
+      "year_class": "3rd Year IT-B",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=divya",
+      "id": 6
+    },
+    {
+      "name": "Vijay Joseph",
+      "position": "Joint Secretary",
+      "year_class": "2nd Year IT-A",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=vijay",
+      "id": 7
+    },
+    {
+      "name": "Harini Iyer",
+      "position": "Joint Secretary",
+      "year_class": "2nd Year IT-B",
+      "photo_url": "https://api.dicebear.com/7.x/bottts/svg?seed=harini",
+      "id": 8
+    }
+  ],
+  "votes": [],
+  "settings": [
+    {
+      "key": "admin_password",
+      "value": "$2a$10$cFPzf/xCnapj/hPu7uz/f.8LCStXOlbb90TVNLU//aaZ0edqRzk8S"
+    },
+    {
+      "key": "results_released",
+      "value": "false"
+    }
+  ]
+}
