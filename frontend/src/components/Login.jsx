@@ -6,7 +6,6 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
   
   // Voter credentials fields
   const [studentId, setStudentId] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
   // OTP phase states
@@ -39,7 +38,7 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
       const response = await fetch('/api/auth/login-step1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, email, password })
+        body: JSON.stringify({ studentId, password })
       });
 
       const data = await response.json();
@@ -115,7 +114,6 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
 
   const autoFillStudent = (student) => {
     setStudentId(student.id);
-    setEmail(student.email);
     setPassword(student.pass);
     setOtpSent(false);
     setDemoOtp('');
@@ -273,17 +271,6 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
                     placeholder="e.g. IT202601"
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Official Registered Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="e.g. aakash@it.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>

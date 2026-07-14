@@ -70,11 +70,10 @@ const runTests = async () => {
     await db.update('settings', { key: 'results_released' }, { value: 'false' });
     await seed();
 
-    // TEST 1: Request login for UNREGISTERED email
-    console.log('Test 1: Attempting login with unregistered email...');
+    // TEST 1: Request login for UNREGISTERED student ID
+    console.log('Test 1: Attempting login with unregistered student ID...');
     const unregisteredRes = await makeRequest('/auth/login-step1', 'POST', {
-      studentId: 'IT202601',
-      email: 'hacker@gmail.com', // Not in database
+      studentId: 'IT202699', // Not in database
       password: 'AA15082005'
     });
 
@@ -89,7 +88,6 @@ const runTests = async () => {
     // Attempt 1: Failed password
     const fail1 = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'WRONGPASSWORD'
     });
     console.log(`- Attempt 1: Status ${fail1.status} - ${fail1.body.error}`);
@@ -97,7 +95,6 @@ const runTests = async () => {
     // Attempt 2: Failed password
     const fail2 = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'WRONGPASSWORD'
     });
     console.log(`- Attempt 2: Status ${fail2.status} - ${fail2.body.error}`);
@@ -105,7 +102,6 @@ const runTests = async () => {
     // Attempt 3: Failed password (triggers block)
     const fail3 = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'WRONGPASSWORD'
     });
     console.log(`- Attempt 3: Status ${fail3.status} - ${fail3.body.error}`);
@@ -119,7 +115,6 @@ const runTests = async () => {
     console.log('\nTest 3: Attempting correct password on blocked account...');
     const blockedLoginRes = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'BH22102006' // Correct password
     });
 
@@ -154,7 +149,6 @@ const runTests = async () => {
     console.log('\nTest 6: Logging in again as IT202602 after unlock...');
     const loginAfterUnlock = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'BH22102006'
     });
 
@@ -227,7 +221,6 @@ const runTests = async () => {
     console.log('\nTest 11: Attempting to log in again after voting...');
     const reloginRes = await makeRequest('/auth/login-step1', 'POST', {
       studentId: 'IT202602',
-      email: 'bhavana@it.edu',
       password: 'BH22102006'
     });
 

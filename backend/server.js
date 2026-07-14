@@ -118,16 +118,16 @@ const authenticateAdminToken = (req, res, next) => {
    AUTHENTICATION ENDPOINTS
    ========================================================================== */
 
-// 1. Step 1 Login: Verify credentials (Roll No, Email, Password) & Request OTP
+// 1. Step 1 Login: Verify credentials (Roll No, Password) & Request OTP
 app.post('/api/auth/login-step1', async (req, res) => {
-  const { studentId, email, password } = req.body;
+  const { studentId, password } = req.body;
 
-  if (!studentId || !email || !password) {
-    return res.status(400).json({ error: 'Roll Number, Email, and Password are required.' });
+  if (!studentId || !password) {
+    return res.status(400).json({ error: 'Roll Number and Password are required.' });
   }
 
   try {
-    const student = await db.get('students', { id: studentId, email: email.toLowerCase().trim() });
+    const student = await db.get('students', { id: studentId });
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found in IT Department registry.' });
