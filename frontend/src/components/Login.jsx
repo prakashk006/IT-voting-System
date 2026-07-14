@@ -21,12 +21,7 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Sample students with explicit passwords and DOBs for review/testing
-  const sampleStudents = [
-    { id: 'IT202601', email: 'aakash@it.edu', name: 'Aakash R', dob: '15/08/2005', pass: 'AA15082005' },
-    { id: 'IT202602', email: 'bhavana@it.edu', name: 'Bhavana S', dob: '22/10/2006', pass: 'BH22102006' },
-    { id: 'IT202603', email: 'chandru@it.edu', name: 'Chandru M', dob: '05/12/2005', pass: 'CH05122005' }
-  ];
+
 
   const handleStep1Submit = async (e) => {
     e.preventDefault();
@@ -112,14 +107,7 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
     }
   };
 
-  const autoFillStudent = (student) => {
-    setStudentId(student.id);
-    setPassword(student.pass);
-    setOtpSent(false);
-    setDemoOtp('');
-    setError('');
-    setSuccess('');
-  };
+
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '480px', margin: '1.5rem auto', width: '100%' }}>
@@ -327,53 +315,7 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
         )}
       </div>
 
-      {/* Quick Autofill Helper for Testing */}
-      {!isAdmin && !otpSent && (
-        <div className="glass-panel" style={{ marginTop: '1.5rem', padding: '1.25rem', borderStyle: 'dashed' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--color-primary)', display: 'block', marginBottom: '0.6rem' }}>
-            🧪 Reviewer Quick-Test Accounts
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {sampleStudents.map(student => (
-              <div 
-                key={student.id}
-                onClick={() => autoFillStudent(student)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '0.8rem',
-                  padding: '0.5rem 0.75rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid var(--border-light)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)';
-                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                  e.currentTarget.style.borderColor = 'var(--border-light)';
-                }}
-              >
-                <div>
-                  <strong style={{ color: 'white' }}>{student.name}</strong> 
-                  <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>({student.id})</span>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    DOB: {student.dob} | Pass: <code style={{ color: '#e9d5ff' }}>{student.pass}</code>
-                  </div>
-                </div>
-                <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
-                  Autofill <ArrowRight size={12} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
