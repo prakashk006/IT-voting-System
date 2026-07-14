@@ -143,7 +143,31 @@ app.post('/api/auth/login-step1', async (req, res) => {
       return res.status(400).json({ error: 'You have already cast your vote. Double voting is restricted.' });
     }
 
-    const match = await bcrypt.compare(password, student.password);
+    let match = false;
+    const isBcryptHash = student.password && (student.password.startsWith('$2a$') || student.password.startsWith('$2b$'));
+
+    if (isBcryptHash) {
+      match = await bcrypt.compare(password, student.password);
+    } else {
+      // Direct comparison with plain text password (imported from raw spreadsheet)
+      match = password === student.password;
+
+      if (match) {
+        // Automatically hash the plain text password for future logins
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.update(
+          'students',
+          { id: studentId },
+          { 
+            password: hashedPassword,
+            failed_attempts: 0,
+            is_blocked: 0,
+            has_voted: student.has_voted || 0
+          }
+        );
+      }
+    }
+
     if (!match) {
       const newAttempts = (student.failed_attempts || 0) + 1;
       const isBlocked = newAttempts >= 3;
