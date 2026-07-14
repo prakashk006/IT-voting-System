@@ -4,7 +4,6 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { Resend } = require('resend');
-const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -40,10 +39,12 @@ const upload = multer({
 app.use('/uploads', express.static(uploadsDir));
 
 /* ==========================================================================
-   EMAIL DISPATCH CONFIGURATION (Resend API or Pooled SMTP or Mock)
+   EMAIL DISPATCH CONFIGURATION (Resend API Platform)
    ========================================================================== */
 
-// 1. Resend Email API setup (With Dual-Account Failover Support)
+const IS_TEST_ENV = process.env.NODE_ENV === 'test';
+
+// Resend Email API setup (With Dual-Account Failover Support)
 const RESEND_API_KEY_PRIMARY = process.env.RESEND_API_KEY_PRIMARY || process.env.RESEND_API_KEY; // Backward compatible fallback
 const RESEND_API_KEY_SECONDARY = process.env.RESEND_API_KEY_SECONDARY;
 
@@ -53,50 +54,10 @@ const resendSecondary = RESEND_API_KEY_SECONDARY ? new Resend(RESEND_API_KEY_SEC
 // Tracker state to handle active Resend key (Sticky failover)
 let useSecondaryResend = false;
 
-// 2. Pooled SMTP setup (With Dual-Account Failover Support)
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
-const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
-
-const SMTP_USER_PRIMARY = process.env.SMTP_USER_PRIMARY;
-const SMTP_PASS_PRIMARY = process.env.SMTP_PASS_PRIMARY;
-
-const SMTP_USER_SECONDARY = process.env.SMTP_USER_SECONDARY;
-const SMTP_PASS_SECONDARY = process.env.SMTP_PASS_SECONDARY;
-
-// Initialize primary SMTP transporter
-const primaryTransport = (SMTP_HOST && SMTP_USER_PRIMARY && SMTP_PASS_PRIMARY) ? nodemailer.createTransport({
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_SECURE,
-  auth: {
-    user: SMTP_USER_PRIMARY,
-    pass: SMTP_PASS_PRIMARY
-  }
-}) : null;
-
-// Initialize secondary SMTP transporter (failover)
-const secondaryTransport = (SMTP_HOST && SMTP_USER_SECONDARY && SMTP_PASS_SECONDARY) ? nodemailer.createTransport({
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_SECURE,
-  auth: {
-    user: SMTP_USER_SECONDARY,
-    pass: SMTP_PASS_SECONDARY
-  }
-}) : null;
-
-// Tracker state to handle active SMTP sender (Sticky failover)
-let useSecondarySender = false;
-
 // Log operational mail state
-if (resendPrimary) {
+if (IS_TEST_ENV) {
+  console.log('📬 Mail Mode: Test Mode active. Simulated OTP logs enabled.');
+} else if (resendPrimary) {
   if (resendSecondary) {
     console.log('📬 Mail Mode: Dual Resend API active with automatic failover.');
     console.log('   Primary API Key:   Configured');
@@ -104,16 +65,8 @@ if (resendPrimary) {
   } else {
     console.log('📬 Mail Mode: Cloud Resend API active (Single Key).');
   }
-} else if (primaryTransport) {
-  if (secondaryTransport) {
-    console.log(`📬 Mail Mode: Dual SMTP active with automatic failover.`);
-    console.log(`   Primary Account:   ${SMTP_USER_PRIMARY}`);
-    console.log(`   Secondary Account: ${SMTP_USER_SECONDARY}`);
-  } else {
-    console.log(`📬 Mail Mode: Single SMTP active (${SMTP_USER_PRIMARY}).`);
-  }
 } else {
-  console.log('📬 Mail Mode: Mock Developer logs active (No config keys found).');
+  console.error('❌ CRITICAL CONFIG WARNING: Resend API Key is missing! Email dispatching will fail in production.');
 }
 
 app.use(cors());
@@ -235,10 +188,19 @@ app.post('/api/auth/login-step1', async (req, res) => {
       </div>
     `;
 
-    // Dispatching via Resend API (With Dual-Key Failover Support)
-    if (resendPrimary) {
-      let emailSent = false;
+    let emailSent = false;
+    let sendError = null;
 
+    // A. TEST ENVIRONMENT MOCK BYPASS
+    if (IS_TEST_ENV) {
+      console.log(`\n==========================================`);
+      console.log(`[TEST MOCK EMAIL SENT TO: ${student.email}]`);
+      console.log(`Your 2FA Voting OTP Code is: ${otp}`);
+      console.log(`==========================================\n`);
+      emailSent = true;
+    } 
+    // B. PRODUCTION EMAIL DELIVERY VIA RESEND
+    else if (resendPrimary) {
       // 1. Try sending with the current active Resend client (Primary by default)
       if (!useSecondaryResend) {
         try {
@@ -252,6 +214,7 @@ app.post('/api/auth/login-step1', async (req, res) => {
           emailSent = true;
         } catch (emailErr) {
           console.error('[RESEND PRIMARY] Failed to send email (possibly limit reached):', emailErr.message);
+          sendError = emailErr.message;
           if (resendSecondary) {
             console.log('[RESEND FAILOVER] Activating Secondary Resend API Key...');
             useSecondaryResend = true; // Swap sticky mode to secondary
@@ -272,65 +235,24 @@ app.post('/api/auth/login-step1', async (req, res) => {
           emailSent = true;
         } catch (emailErr) {
           console.error('[RESEND SECONDARY] Failed to send email:', emailErr.message);
+          sendError = emailErr.message;
           // If secondary also fails, swap back to primary for future retries
           useSecondaryResend = false;
         }
       }
-    } 
-    // Dispatching via SMTP (with Dual-Account Failover Support)
-    else if (primaryTransport) {
-      let emailSent = false;
+    }
 
-      // 1. Try sending with the current active transporter (Primary by default)
-      if (!useSecondarySender) {
-        try {
-          await primaryTransport.sendMail({
-            from: `"IT Department Elections" <${SMTP_USER_PRIMARY}>`,
-            to: student.email,
-            subject: 'IT Office Bearers Election - 2FA OTP Code',
-            html: emailHtml
-          });
-          console.log(`[SMTP PRIMARY] OTP email sent successfully to ${student.email}`);
-          emailSent = true;
-        } catch (err) {
-          console.error(`[SMTP PRIMARY] Failed to send email (possibly rate-limited):`, err.message);
-          if (secondaryTransport) {
-            console.log(`[SMTP FAILOVER] Activating Secondary SMTP account...`);
-            useSecondarySender = true; // Swap sticky mode to secondary
-          }
-        }
-      }
-
-      // 2. Try sending with Secondary if Primary failed (or if we are already in secondary mode)
-      if (!emailSent && secondaryTransport) {
-        try {
-          await secondaryTransport.sendMail({
-            from: `"IT Department Elections" <${SMTP_USER_SECONDARY}>`,
-            to: student.email,
-            subject: 'IT Office Bearers Election - 2FA OTP Code',
-            html: emailHtml
-          });
-          console.log(`[SMTP SECONDARY] OTP email sent successfully to ${student.email}`);
-          emailSent = true;
-        } catch (err) {
-          console.error(`[SMTP SECONDARY] Failed to send email:`, err.message);
-          // If secondary also fails, swap back to primary for future retries
-          useSecondarySender = false;
-        }
-      }
-    } 
-    // Mock Fallback (Local Dev mode)
-    else {
-      console.log(`\n==========================================`);
-      console.log(`[MOCK EMAIL SENT TO: ${student.email}]`);
-      console.log(`Your 2FA Voting OTP Code is: ${otp}`);
-      console.log(`==========================================\n`);
+    // Block authentication if mail could not be dispatched in production
+    if (!emailSent && !IS_TEST_ENV) {
+      return res.status(500).json({ 
+        error: `Failed to dispatch OTP email: ${sendError || 'Email service not configured'}. Please contact administrator.` 
+      });
     }
 
     res.json({
       message: 'Password verified. OTP code has been generated.',
-      // Only return OTP in response if neither Resend nor SMTP is configured
-      demoOtp: (resendPrimary || primaryTransport) ? null : otp
+      // Only return OTP in response if in automated test mode
+      demoOtp: IS_TEST_ENV ? otp : null
     });
 
   } catch (err) {

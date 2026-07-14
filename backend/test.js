@@ -1,5 +1,6 @@
 // Automated Security & Validation Test Suite
 process.env.PORT = 5001; // Run test server on port 5001
+process.env.NODE_ENV = 'test'; // Enable test mode bypass for OTPs
 
 const http = require('http');
 const db = require('./db');
