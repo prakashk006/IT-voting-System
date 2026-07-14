@@ -36,6 +36,42 @@ const buildMongoQuery = (criteria) => {
 };
 
 // --------------------------------------------------------------------------
+// MONGODB SCHEMA MAPPERS (Adapts user's Excel import fields automatically)
+// --------------------------------------------------------------------------
+const mapToMongoCollection = (table) => {
+  if (MONGODB_URI && table === 'students') return 'IT-voting';
+  return table;
+};
+
+const mapToMongoFields = (fields) => {
+  if (!fields) return fields;
+  const mapped = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (key === 'id') mapped['Roll Number'] = value;
+    else if (key === 'name') mapped['Student Name'] = value;
+    else if (key === 'email') mapped['Personal Email ID'] = value;
+    else if (key === 'dob') mapped['Date of Birth'] = value;
+    else if (key === 'password') mapped['Password'] = value;
+    else mapped[key] = value;
+  }
+  return mapped;
+};
+
+const mapFromMongoDocFields = (doc, table) => {
+  if (MONGODB_URI && table === 'students' && doc) {
+    return {
+      ...doc,
+      id: doc['Roll Number'],
+      name: doc['Student Name'],
+      email: doc['Personal Email ID'],
+      dob: doc['Date of Birth'],
+      password: doc['Password']
+    };
+  }
+  return doc;
+};
+
+// --------------------------------------------------------------------------
 // THREAD-SAFETY OPERATION QUEUE (Only used for local JSON Database fallback)
 // --------------------------------------------------------------------------
 let dbQueue = Promise.resolve();
@@ -83,9 +119,9 @@ const initDb = async () => {
       mongoClient = new MongoClient(MONGODB_URI);
       await mongoClient.connect();
       
-      // Parse database name from connection string or default to 'it_elections'
+      // Parse database name from connection string or default to 'StudentsDetails'
       const urlParts = MONGODB_URI.split('/');
-      const dbName = urlParts[urlParts.length - 1].split('?')[0] || 'it_elections';
+      const dbName = urlParts[urlParts.length - 1].split('?')[0] || 'StudentsDetails';
       mongoDb = mongoClient.db(dbName);
       
       console.log(`✅ Connected to cloud MongoDB database: "${dbName}"`);
@@ -107,8 +143,11 @@ const dbHelper = {
   // Get a single record
   get: async (table, criteria = {}) => {
     if (mongoDb) {
-      const query = buildMongoQuery(criteria);
-      return await mongoDb.collection(table).findOne(query);
+      const collName = mapToMongoCollection(table);
+      const mappedCriteria = mapToMongoFields(criteria);
+      const query = buildMongoQuery(mappedCriteria);
+      const doc = await mongoDb.collection(collName).findOne(query);
+      return mapFromMongoDocFields(doc, table);
     } else {
       return enqueue(async () => {
         const data = loadDb();
@@ -128,8 +167,11 @@ const dbHelper = {
   // Get all records matching criteria
   all: async (table, criteria = {}) => {
     if (mongoDb) {
-      const query = buildMongoQuery(criteria);
-      return await mongoDb.collection(table).find(query).toArray();
+      const collName = mapToMongoCollection(table);
+      const mappedCriteria = mapToMongoFields(criteria);
+      const query = buildMongoQuery(mappedCriteria);
+      const docs = await mongoDb.collection(collName).find(query).toArray();
+      return docs.map(doc => mapFromMongoDocFields(doc, table));
     } else {
       return enqueue(async () => {
         const data = loadDb();
@@ -151,14 +193,17 @@ const dbHelper = {
   // Insert a record
   insert: async (table, record) => {
     if (mongoDb) {
+      const collName = mapToMongoCollection(table);
+      const mappedRecord = mapToMongoFields(record);
+
       // Auto-increment simple integer IDs for candidates
-      if (table === 'candidates' && !record.id) {
+      if (table === 'candidates' && !mappedRecord.id) {
         const lastCand = await mongoDb.collection('candidates').find().sort({ id: -1 }).limit(1).toArray();
-        record.id = lastCand.length > 0 ? (lastCand[0].id + 1) : 1;
+        mappedRecord.id = lastCand.length > 0 ? (lastCand[0].id + 1) : 1;
       }
       
-      await mongoDb.collection(table).insertOne(record);
-      return record;
+      await mongoDb.collection(collName).insertOne(mappedRecord);
+      return mapFromMongoDocFields(mappedRecord, table);
     } else {
       return enqueue(async () => {
         const data = loadDb();
@@ -179,8 +224,11 @@ const dbHelper = {
   // Update records matching criteria
   update: async (table, criteria, updates) => {
     if (mongoDb) {
-      const query = buildMongoQuery(criteria);
-      const result = await mongoDb.collection(table).updateMany(query, { $set: updates });
+      const collName = mapToMongoCollection(table);
+      const mappedCriteria = mapToMongoFields(criteria);
+      const mappedUpdates = mapToMongoFields(updates);
+      const query = buildMongoQuery(mappedCriteria);
+      const result = await mongoDb.collection(collName).updateMany(query, { $set: mappedUpdates });
       return { changes: result.modifiedCount };
     } else {
       return enqueue(async () => {
@@ -213,8 +261,10 @@ const dbHelper = {
   // Delete records matching criteria
   delete: async (table, criteria) => {
     if (mongoDb) {
-      const query = buildMongoQuery(criteria);
-      const result = await mongoDb.collection(table).deleteMany(query);
+      const collName = mapToMongoCollection(table);
+      const mappedCriteria = mapToMongoFields(criteria);
+      const query = buildMongoQuery(mappedCriteria);
+      const result = await mongoDb.collection(collName).deleteMany(query);
       return { changes: result.deletedCount };
     } else {
       return enqueue(async () => {
