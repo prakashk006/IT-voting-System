@@ -14,6 +14,7 @@ export default function AdminPanel({ token, onLogout }) {
   const [newPhotoFile, setNewPhotoFile] = useState(null); // File upload state
   const [submittingCandidate, setSubmittingCandidate] = useState(false);
   const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'audits' | 'ballots' | 'system'
+  const [selectedClass, setSelectedClass] = useState('All');
 
   const fetchStats = async () => {
     try {
@@ -171,6 +172,26 @@ export default function AdminPanel({ token, onLogout }) {
     }
   };
 
+  const handleClearCandidates = async () => {
+    if (!window.confirm('🚨 DANGER: This will delete ALL registered candidates, custom photos, and all cast votes! Are you absolutely sure?')) return;
+    setError('');
+    setActionSuccess('');
+
+    try {
+      const response = await fetch('/api/admin/clear-candidates', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to clear candidates');
+
+      setActionSuccess('All candidates and votes cleared successfully. Ballot is now clean.');
+      fetchStats();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   // Group candidate tallies by position for display
   const getGroupedTallies = () => {
     if (!stats || !stats.tallies) return {};
@@ -212,6 +233,9 @@ export default function AdminPanel({ token, onLogout }) {
           </button>
           <button className="btn btn-secondary" onClick={handleResetElection} style={{ border: '1px solid var(--color-danger)', color: '#f87171', width: 'auto' }}>
             Reset Election
+          </button>
+          <button className="btn btn-secondary" onClick={handleClearCandidates} style={{ border: '1px solid #d97706', color: '#d97706', width: 'auto' }}>
+            Clear Candidates
           </button>
           <button className="btn btn-secondary" onClick={onLogout} style={{ width: 'auto' }}>
             Lock Dashboard
@@ -336,7 +360,7 @@ export default function AdminPanel({ token, onLogout }) {
                                 />
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.95rem' }}>
-                                    <strong style={{ color: 'white' }}>{cand.name}</strong>
+                                    <strong style={{ color: 'var(--text-primary)' }}>{cand.name}</strong>
                                     <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>
                                       {cand.vote_count} {cand.vote_count === 1 ? 'vote' : 'votes'}
                                     </span>
@@ -394,7 +418,7 @@ export default function AdminPanel({ token, onLogout }) {
                     <div key={position} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                       <div>
                         <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>{position}</span>
-                        <strong style={{ color: 'white', fontSize: '0.95rem' }}>{leader ? leader.name : 'No votes cast yet'}</strong>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{leader ? leader.name : 'No votes cast yet'}</strong>
                       </div>
                       {leader && (
                         <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
@@ -489,7 +513,7 @@ export default function AdminPanel({ token, onLogout }) {
                       }}
                     />
                     <Upload size={24} style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }} />
-                    <p style={{ fontSize: '0.85rem', color: 'white', margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>
                       {newPhotoFile ? `Selected: ${newPhotoFile.name}` : 'Click or Drag image here to upload'}
                     </p>
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -518,45 +542,75 @@ export default function AdminPanel({ token, onLogout }) {
           <h2 className="header-title" style={{ fontSize: '1.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Users size={20} style={{ color: 'var(--color-primary)' }} /> Voter Audit Logs
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.75rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
             Live audit trail displaying precisely when students log in, cast ballots, and log out. All times are displayed in India Standard Time (+05:30).
           </p>
-          {stats?.voterAudits && stats.voterAudits.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No student registration records found.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Roll Number</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Name</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Email</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Login Time</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Vote Time</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Logout Time</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white', textAlign: 'right' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats?.voterAudits.map(voter => (
-                    <tr key={voter.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'white' }} data-label="Roll Number">{voter.id}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: 'white' }} data-label="Name">{voter.name}</td>
-                      <td style={{ padding: '0.75rem 0.5rem' }} data-label="Email">{voter.email}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#60a5fa' }} data-label="Login Time">{voter.login_time}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#34d399' }} data-label="Vote Time">{voter.vote_time}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#f87171' }} data-label="Logout Time">{voter.logout_time}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }} data-label="Status">
-                        <span style={{ background: voter.has_voted ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: voter.has_voted ? '#34d399' : '#f87171', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                          {voter.has_voted ? 'Voted' : 'Pending'}
-                        </span>
-                      </td>
+
+          {/* Class / Section Filters */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+            {(() => {
+              const uniqueClasses = stats?.voterAudits
+                ? ['All', ...new Set(stats.voterAudits.map(v => v.class_name).filter(Boolean))]
+                : ['All'];
+              return uniqueClasses.map(cls => (
+                <button
+                  key={cls}
+                  onClick={() => setSelectedClass(cls)}
+                  className={`btn ${selectedClass === cls ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+                >
+                  {cls}
+                </button>
+              ));
+            })()}
+          </div>
+
+          {(() => {
+            const filteredAudits = stats?.voterAudits
+              ? stats.voterAudits.filter(v => selectedClass === 'All' || v.class_name === selectedClass)
+              : [];
+
+            if (filteredAudits.length === 0) {
+              return <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No student registration records found for this class.</p>;
+            }
+
+            return (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Roll Number</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Name</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Class</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Email</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Login Time</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Vote Time</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Logout Time</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)', textAlign: 'right' }}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {filteredAudits.map(voter => (
+                      <tr key={voter.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                        <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }} data-label="Roll Number">{voter.id}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }} data-label="Name">{voter.name}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }} data-label="Class">{voter.class_name || 'N/A'}</td>
+                        <td style={{ padding: '0.75rem 0.5rem' }} data-label="Email">{voter.email}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#2563eb', fontWeight: '500' }} data-label="Login Time">{voter.login_time}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#10b981', fontWeight: '500' }} data-label="Vote Time">{voter.vote_time}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#ef4444', fontWeight: '500' }} data-label="Logout Time">{voter.logout_time}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }} data-label="Status">
+                          <span style={{ background: voter.has_voted ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: voter.has_voted ? '#10b981' : '#ef4444', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                            {voter.has_voted ? 'Voted' : 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -576,17 +630,17 @@ export default function AdminPanel({ token, onLogout }) {
               <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Roll Number</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Voter Name</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Office Bearer Position</th>
-                    <th style={{ padding: '0.75rem 0.5rem', color: 'white', textAlign: 'right' }}>Selected Candidate</th>
+                    <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Roll Number</th>
+                    <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Voter Name</th>
+                    <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Office Bearer Position</th>
+                    <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)', textAlign: 'right' }}>Selected Candidate</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats?.ballots.map((ballot, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'white' }} data-label="Roll Number">{ballot.studentId}</td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: 'white' }} data-label="Voter Name">{ballot.studentName}</td>
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }} data-label="Roll Number">{ballot.studentId}</td>
+                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }} data-label="Voter Name">{ballot.studentName}</td>
                       <td style={{ padding: '0.75rem 0.5rem', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: 'bold' }} data-label="Position">{ballot.position}</td>
                       <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', color: '#60a5fa', fontWeight: 'bold' }} data-label="Selected Candidate">{ballot.candidateName}</td>
                     </tr>
@@ -611,7 +665,7 @@ export default function AdminPanel({ token, onLogout }) {
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: stats?.resultsReleased ? 'var(--color-danger)' : 'var(--color-accent)', display: 'inline-block' }} />
-                <span className="stat-value" style={{ fontSize: '1.6rem', color: 'white', fontWeight: '800' }}>
+                <span className="stat-value" style={{ fontSize: '1.6rem', color: 'var(--text-primary)', fontWeight: '800' }}>
                   {stats?.resultsReleased ? 'Concluded' : 'Active'}
                 </span>
               </div>
@@ -697,17 +751,17 @@ export default function AdminPanel({ token, onLogout }) {
                 <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Roll Number</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Name</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Email</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'white' }}>Failed Attempts</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'white', textAlign: 'right' }}>Action</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Roll Number</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Name</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Email</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Failed Attempts</th>
+                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)', textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats?.blockedVoters.map(voter => (
                       <tr key={voter.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'white' }} data-label="Roll Number">{voter.id}</td>
+                        <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }} data-label="Roll Number">{voter.id}</td>
                         <td style={{ padding: '0.75rem 0.5rem' }} data-label="Name">{voter.name}</td>
                         <td style={{ padding: '0.75rem 0.5rem' }} data-label="Email">{voter.email}</td>
                         <td style={{ padding: '0.75rem 0.5rem', color: 'var(--color-danger)' }} data-label="Failed Attempts">{voter.failed_attempts} attempts</td>

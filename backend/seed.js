@@ -30,11 +30,11 @@ const seed = async () => {
     if (allStudents.length === 0) {
       console.log('Seeding sample IT students with passwords...');
       const sampleStudentsRaw = [
-        { id: 'IT202601', name: 'Aakash R', email: 'aakash@it.edu', dob: '15/08/2005' },
-        { id: 'IT202602', name: 'Bhavana S', email: 'bhavana@it.edu', dob: '22/10/2006' },
-        { id: 'IT202603', name: 'Chandru M', email: 'chandru@it.edu', dob: '05/12/2005' },
-        { id: 'IT202604', name: 'Deepa K', email: 'deepa@it.edu', dob: '19/04/2006' },
-        { id: 'IT202605', name: 'Eshwar P', email: 'eshwar@it.edu', dob: '30/09/2005' }
+        { id: 'IT202601', name: 'Aakash R', email: 'aakash@it.edu', dob: '15/08/2005', class_name: '3rd IT-A' },
+        { id: 'IT202602', name: 'Bhavana S', email: 'bhavana@it.edu', dob: '22/10/2006', class_name: '3rd IT-B' },
+        { id: 'IT202603', name: 'Chandru M', email: 'chandru@it.edu', dob: '05/12/2005', class_name: '3rd IT-A' },
+        { id: 'IT202604', name: 'Deepa K', email: 'deepa@it.edu', dob: '19/04/2006', class_name: '3rd IT-B' },
+        { id: 'IT202605', name: 'Eshwar P', email: 'eshwar@it.edu', dob: '30/09/2005', class_name: '3rd IT-A' }
       ];
 
       for (const studentRaw of sampleStudentsRaw) {
@@ -51,10 +51,11 @@ const seed = async () => {
           is_blocked: 0,
           has_voted: 0,
           otp: null,
-          otp_expiry: null
+          otp_expiry: null,
+          class_name: studentRaw.class_name
         });
         
-        console.log(`Seeded student ${studentRaw.name} (Password: ${plainPassword})`);
+        console.log(`Seeded student ${studentRaw.name} (Password: ${plainPassword}, Class: ${studentRaw.class_name})`);
       }
       console.log(`${sampleStudentsRaw.length} sample students seeded.`);
     }

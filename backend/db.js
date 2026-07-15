@@ -65,7 +65,13 @@ const mapFromMongoDocFields = (doc, table) => {
       name: doc['Student Name'],
       email: doc['Personal Email ID'],
       dob: doc['Date of Birth'],
-      password: doc['Password']
+      password: doc['Password'],
+      class_name: doc['Class'] || doc['class'] || doc['Section'] || doc['Year'] || 'Unknown Class'
+    };
+  } else if (!MONGODB_URI && table === 'students' && doc) {
+    return {
+      ...doc,
+      class_name: doc['class_name'] || doc['Class'] || doc['class'] || doc['Section'] || doc['Year'] || 'Unknown Class'
     };
   }
   return doc;

@@ -118,9 +118,9 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
           className="btn"
           style={{
             flex: 1,
-            background: !isAdmin ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+            background: !isAdmin ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
             border: 'none',
-            color: !isAdmin ? '#60a5fa' : 'var(--text-secondary)',
+            color: !isAdmin ? 'var(--color-primary)' : 'var(--text-secondary)',
             padding: '0.5rem'
           }}
           onClick={() => { setIsAdmin(false); setError(''); setSuccess(''); }}
@@ -131,9 +131,9 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
           className="btn"
           style={{
             flex: 1,
-            background: isAdmin ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+            background: isAdmin ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
             border: 'none',
-            color: isAdmin ? '#c084fc' : 'var(--text-secondary)',
+            color: isAdmin ? 'var(--color-secondary)' : 'var(--text-secondary)',
             padding: '0.5rem'
           }}
           onClick={() => { setIsAdmin(true); setError(''); setSuccess(''); }}
@@ -212,13 +212,13 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
 
         {/* Simulated Inbox / OTP Helper */}
         {!isAdmin && otpSent && demoOtp && (
-          <div className="dev-helper">
-            <span style={{ fontWeight: '600', color: '#e9d5ff' }}>📨 Mock Email Inbox</span>
-            <span style={{ fontSize: '0.8rem' }}>A secure OTP was sent to your email. Copy the code:</span>
-            <code style={{ fontSize: '1.35rem', color: '#c084fc', fontWeight: 'bold', letterSpacing: '3px', margin: '0.25rem 0' }}>
+          <div className="dev-helper" style={{ borderStyle: 'dashed' }}>
+            <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>📨 Mock Email Inbox</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>A secure OTP was sent to your email. Copy the code:</span>
+            <code style={{ fontSize: '1.35rem', color: 'var(--color-primary)', fontWeight: 'bold', letterSpacing: '3px', margin: '0.25rem 0' }}>
               {demoOtp}
             </code>
-            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(Account will lock after 3 failed password/OTP attempts)</span>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7, color: 'var(--text-muted)' }}>(Account will lock after 3 failed password/OTP attempts)</span>
           </div>
         )}
 

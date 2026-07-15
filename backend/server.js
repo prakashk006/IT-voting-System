@@ -858,6 +858,27 @@ app.post('/api/admin/reset-election', authenticateAdminToken, async (req, res) =
   }
 });
 
+// 7. Clear All Candidates and Votes
+app.post('/api/admin/clear-candidates', authenticateAdminToken, async (req, res) => {
+  try {
+    const candidates = await db.all('candidates');
+    for (const cand of candidates) {
+      if (cand.photo_url.startsWith('/uploads/')) {
+        const filePath = path.join(__dirname, cand.photo_url);
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('Failed to delete file:', err.message);
+        });
+      }
+    }
+    await db.delete('votes', {});
+    await db.delete('candidates', {});
+    res.json({ message: 'All candidates and votes cleared successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to clear candidates.' });
+  }
+});
+
 // Serve Frontend static files in production (Render monolith deployment)
 const frontendDistPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDistPath)) {
