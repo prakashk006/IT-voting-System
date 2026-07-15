@@ -118,7 +118,7 @@ export default function VotingWizard({ candidates, token, onVoteSubmitted }) {
         <div>
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
             <h2 className="header-title" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-              Select Candidate for <span className="glow-text-blue" style={{ color: '#60a5fa' }}>{currentPosition}</span>
+              Select Candidate for <span className="glow-text-blue" style={{ color: 'var(--color-primary)' }}>{currentPosition}</span>
             </h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               Choose one candidate from the choices below. You must make a selection to proceed.
@@ -205,7 +205,7 @@ export default function VotingWizard({ candidates, token, onVoteSubmitted }) {
                       >
                         {position}
                       </span>
-                      <strong style={{ fontSize: '1.1rem', color: 'white' }}>{details?.name}</strong>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{details?.name}</strong>
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
                         ({details?.year_class})
                       </span>
@@ -236,7 +236,7 @@ export default function VotingWizard({ candidates, token, onVoteSubmitted }) {
           >
             <ShieldAlert size={28} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
             <div>
-              <strong style={{ color: 'white', display: 'block', marginBottom: '0.25rem' }}>
+              <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '0.25rem' }}>
                 Double-Voting Security Lock Active
               </strong>
               <span style={{ fontSize: '0.85rem' }}>

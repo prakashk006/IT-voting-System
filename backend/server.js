@@ -821,7 +821,36 @@ app.post('/api/admin/unblock-student', authenticateAdminToken, async (req, res) 
   }
 });
 
-// 6. Reset Election (Delete votes and reset voter statuses)
+// 6. Change Admin Password
+app.post('/api/admin/change-password', authenticateAdminToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'Old password and new password are required.' });
+  }
+
+  try {
+    const hashRow = await db.get('settings', { key: 'admin_password' });
+    if (!hashRow) {
+      return res.status(500).json({ error: 'Admin settings not initialized.' });
+    }
+
+    const match = await bcrypt.compare(oldPassword, hashRow.value);
+    if (!match) {
+      return res.status(401).json({ error: 'Incorrect current password.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.update('settings', { key: 'admin_password' }, { value: hashedPassword });
+
+    res.json({ message: 'Admin password successfully updated.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update admin password.' });
+  }
+});
+
+// 7. Reset Election (Delete votes and reset voter statuses)
 app.post('/api/admin/reset-election', authenticateAdminToken, async (req, res) => {
   try {
     const candidates = await db.all('candidates');

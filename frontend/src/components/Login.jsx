@@ -238,9 +238,7 @@ export default function Login({ onVoterLogin, onAdminLogin }) {
                   required
                 />
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Demo Master password is: <strong style={{ color: 'var(--text-secondary)' }}>admin</strong>
-              </span>
+
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
               {loading ? 'Entering...' : 'Authenticate Admin'}

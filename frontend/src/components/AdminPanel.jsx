@@ -16,6 +16,14 @@ export default function AdminPanel({ token, onLogout }) {
   const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'audits' | 'ballots' | 'system'
   const [selectedClass, setSelectedClass] = useState('All');
 
+  // Change Admin Password Form State
+  const [oldAdminPassword, setOldAdminPassword] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/stats', {
@@ -220,6 +228,45 @@ export default function AdminPanel({ token, onLogout }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (newAdminPassword !== confirmAdminPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+
+    setUpdatingPassword(true);
+
+    try {
+      const response = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          oldPassword: oldAdminPassword,
+          newPassword: newAdminPassword
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update password');
+
+      setPasswordSuccess('Admin password updated successfully.');
+      setOldAdminPassword('');
+      setNewAdminPassword('');
+      setConfirmAdminPassword('');
+    } catch (err) {
+      setPasswordError(err.message);
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   // Group candidate tallies by position for display
@@ -788,58 +835,120 @@ export default function AdminPanel({ token, onLogout }) {
             </div>
           </div>
 
-          {/* Blocked Students Manager Panel */}
-          <div className="glass-panel" style={{ padding: '1.75rem 2rem', background: 'rgba(239, 68, 68, 0.02)' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <Lock size={18} /> Blocked Voter Accounts (Lockout Protection)
-            </h2>
-            {stats?.blockedVoters && stats.blockedVoters.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-                No student accounts are currently locked. System running securely.
-              </p>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Roll Number</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Name</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Email</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Failed Attempts</th>
-                      <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)', textAlign: 'right' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats?.blockedVoters.map(voter => (
-                      <tr key={voter.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }} data-label="Roll Number">{voter.id}</td>
-                        <td style={{ padding: '0.75rem 0.5rem' }} data-label="Name">{voter.name}</td>
-                        <td style={{ padding: '0.75rem 0.5rem' }} data-label="Email">{voter.email}</td>
-                        <td style={{ padding: '0.75rem 0.5rem', color: 'var(--color-danger)' }} data-label="Failed Attempts">{voter.failed_attempts} attempts</td>
-                        <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }} data-label="Action">
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => handleUnblockStudent(voter.id)}
-                            style={{
-                              padding: '0.4rem 0.75rem',
-                              fontSize: '0.8rem',
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              color: '#34d399',
-                              borderColor: 'transparent',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
-                            }}
-                          >
-                            <Unlock size={12} /> Unlock Account
-                          </button>
-                        </td>
+          {/* System Control Panels Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginTop: '1.5rem' }} className="admin-grid-layout">
+            {/* Blocked Students Manager Panel */}
+            <div className="glass-panel" style={{ padding: '1.75rem 2rem', background: 'rgba(239, 68, 68, 0.02)', margin: 0 }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <Lock size={18} /> Blocked Voter Accounts (Lockout Protection)
+              </h2>
+              {stats?.blockedVoters && stats.blockedVoters.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                  No student accounts are currently locked. System running securely.
+                </p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
+                        <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Roll Number</th>
+                        <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Name</th>
+                        <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)' }}>Failed Attempts</th>
+                        <th style={{ padding: '0.75rem 0.5rem', color: 'var(--text-primary)', textAlign: 'right' }}>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {stats?.blockedVoters.map(voter => (
+                        <tr key={voter.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                          <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }} data-label="Roll Number">{voter.id}</td>
+                          <td style={{ padding: '0.75rem 0.5rem' }} data-label="Name">{voter.name}</td>
+                          <td style={{ padding: '0.75rem 0.5rem', color: 'var(--color-danger)' }} data-label="Failed Attempts">{voter.failed_attempts} attempts</td>
+                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }} data-label="Action">
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => handleUnblockStudent(voter.id)}
+                              style={{
+                                padding: '0.4rem 0.75rem',
+                                fontSize: '0.8rem',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#34d399',
+                                borderColor: 'transparent',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                width: 'auto'
+                              }}
+                            >
+                              <Unlock size={12} /> Unlock Account
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Change Admin Password Panel */}
+            <div className="glass-panel" style={{ padding: '1.75rem 2rem', margin: 0 }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <Key size={18} style={{ color: 'var(--color-primary)' }} /> Change Admin Password
+              </h2>
+              {passwordSuccess && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '8px', color: '#10b981', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  {passwordSuccess}
+                </div>
+              )}
+              {passwordError && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', color: '#ef4444', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  {passwordError}
+                </div>
+              )}
+              <form onSubmit={handleUpdatePassword}>
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label className="form-label">Current Admin Password</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={oldAdminPassword}
+                    onChange={(e) => setOldAdminPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={newAdminPassword}
+                    onChange={(e) => setNewAdminPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Confirm New Password</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={confirmAdminPassword}
+                    onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                  disabled={updatingPassword}
+                >
+                  {updatingPassword ? 'Updating Password...' : 'Update Password'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
