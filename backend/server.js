@@ -44,8 +44,15 @@ app.use('/uploads', express.static(uploadsDir));
 
 const IS_TEST_ENV = process.env.NODE_ENV === 'test';
 
-// Pipedream Webhook option (Free SMTP / Sandbox bypass)
-const PIPEDREAM_WEBHOOK_URL = process.env.PIPEDREAM_WEBHOOK_URL;
+// Pipedream Webhook array for rotating/failover traffic
+const PIPEDREAM_URLS = [
+  process.env.PIPEDREAM_WEBHOOK_URL || process.env.PIPEDREAM_URL_1,
+  process.env.PIPEDREAM_URL_2,
+  process.env.PIPEDREAM_URL_3,
+  process.env.PIPEDREAM_URL_4
+].filter(Boolean);
+
+let currentWebhookIndex = 0;
 
 // Resend Email API setup (With Dual-Account Failover Support)
 const RESEND_API_KEY_PRIMARY = process.env.RESEND_API_KEY_PRIMARY || process.env.RESEND_API_KEY; // Backward compatible fallback
@@ -60,8 +67,8 @@ let useSecondaryResend = false;
 // Log operational mail state
 if (IS_TEST_ENV) {
   console.log('📬 Mail Mode: Test Mode active. Simulated OTP logs enabled.');
-} else if (PIPEDREAM_WEBHOOK_URL) {
-  console.log('📬 Mail Mode: HTTP Pipedream Webhook active (100% Free / Sandbox bypass).');
+} else if (PIPEDREAM_URLS.length > 0) {
+  console.log(`📬 Mail Mode: HTTP Pipedream Webhooks active. (${PIPEDREAM_URLS.length} accounts configured for rotating load balancing).`);
 } else if (resendPrimary) {
   if (resendSecondary) {
     console.log('📬 Mail Mode: Dual Resend API active with automatic failover.');
@@ -71,7 +78,7 @@ if (IS_TEST_ENV) {
     console.log('📬 Mail Mode: Cloud Resend API active (Single Key).');
   }
 } else {
-  console.error('❌ CRITICAL CONFIG WARNING: Pipedream Webhook or Resend API Key is missing! Email dispatching will fail in production.');
+  console.error('❌ CRITICAL CONFIG WARNING: Pipedream Webhooks or Resend API Key is missing! Email dispatching will fail in production.');
 }
 
 app.use(cors());
@@ -228,30 +235,38 @@ app.post('/api/auth/login-step1', async (req, res) => {
       console.log(`==========================================\n`);
       emailSent = true;
     } 
-    // B. PIPEDREAM WEBHOOK DISPATCH (100% Free / Outbound SMTP port bypass)
-    else if (PIPEDREAM_WEBHOOK_URL) {
-      try {
-        const response = await fetch(PIPEDREAM_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: student.email,
-            subject: 'IT Office Bearers Election - 2FA OTP Code',
-            studentName: student.name,
-            otp: otp
-          })
-        });
-        
-        if (response.ok) {
-          console.log(`[PIPEDREAM] OTP email successfully dispatched to ${student.email}`);
-          emailSent = true;
-        } else {
-          const errMsg = await response.text();
-          throw new Error(errMsg || `Status ${response.status}`);
+    // B. PIPEDREAM WEBHOOK DISPATCH (Rotating / Failover for 400+ students)
+    else if (PIPEDREAM_URLS.length > 0) {
+      let attempts = 0;
+      while (!emailSent && attempts < PIPEDREAM_URLS.length) {
+        const activeUrl = PIPEDREAM_URLS[currentWebhookIndex];
+        try {
+          const response = await fetch(activeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: student.email,
+              subject: 'IT Office Bearers Election - 2FA OTP Code',
+              studentName: student.name,
+              otp: otp
+            })
+          });
+          
+          if (response.ok) {
+            console.log(`[PIPEDREAM #${currentWebhookIndex + 1}] OTP email successfully dispatched to ${student.email}`);
+            emailSent = true;
+          } else {
+            const errMsg = await response.text();
+            throw new Error(errMsg || `Status ${response.status}`);
+          }
+        } catch (err) {
+          console.error(`[PIPEDREAM #${currentWebhookIndex + 1}] Failed to send webhook:`, err.message);
+          sendError = err.message;
+          
+          // Switch to the next webhook link in rotation
+          currentWebhookIndex = (currentWebhookIndex + 1) % PIPEDREAM_URLS.length;
+          attempts++;
         }
-      } catch (err) {
-        console.error('[PIPEDREAM] Failed to send webhook email:', err.message);
-        sendError = err.message;
       }
     }
     // C. PRODUCTION EMAIL DELIVERY VIA RESEND
