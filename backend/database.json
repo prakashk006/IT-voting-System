@@ -10,7 +10,10 @@
       "is_blocked": 0,
       "has_voted": 0,
       "otp": null,
-      "otp_expiry": null
+      "otp_expiry": null,
+      "login_time": null,
+      "vote_time": null,
+      "logout_time": null
     },
     {
       "id": "IT202602",
@@ -22,7 +25,10 @@
       "is_blocked": 0,
       "has_voted": 0,
       "otp": null,
-      "otp_expiry": null
+      "otp_expiry": null,
+      "login_time": null,
+      "vote_time": null,
+      "logout_time": null
     },
     {
       "id": "IT202603",
@@ -34,7 +40,10 @@
       "is_blocked": 0,
       "has_voted": 0,
       "otp": null,
-      "otp_expiry": null
+      "otp_expiry": null,
+      "login_time": null,
+      "vote_time": null,
+      "logout_time": null
     },
     {
       "id": "IT202604",
@@ -46,7 +55,10 @@
       "is_blocked": 0,
       "has_voted": 0,
       "otp": null,
-      "otp_expiry": null
+      "otp_expiry": null,
+      "login_time": null,
+      "vote_time": null,
+      "logout_time": null
     },
     {
       "id": "IT202605",
@@ -58,7 +70,10 @@
       "is_blocked": 0,
       "has_voted": 0,
       "otp": null,
-      "otp_expiry": null
+      "otp_expiry": null,
+      "login_time": null,
+      "vote_time": null,
+      "logout_time": null
     }
   ],
   "candidates": [

@@ -65,7 +65,17 @@ export default function App() {
     setView('admin-panel');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (voterToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${voterToken}` }
+        });
+      } catch (err) {
+        console.error('Failed to log logout session:', err);
+      }
+    }
     localStorage.removeItem('voterToken');
     localStorage.removeItem('adminToken');
     localStorage.removeItem('student');

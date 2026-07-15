@@ -381,10 +381,11 @@ app.post('/api/auth/login-step2', async (req, res) => {
       }
     }
 
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
     await db.update(
       'students', 
       { id: studentId }, 
-      { otp: null, otp_expiry: null, failed_attempts: 0 }
+      { otp: null, otp_expiry: null, failed_attempts: 0, login_time: timestamp }
     );
 
     const token = jwt.sign(
@@ -407,6 +408,19 @@ app.post('/api/auth/login-step2', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 3. Voter Logout Audit
+app.post('/api/auth/logout', authenticateVoterToken, async (req, res) => {
+  const studentId = req.user.id;
+  try {
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    await db.update('students', { id: studentId }, { logout_time: timestamp });
+    res.json({ message: 'Voter logged out successfully and session closed.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to record logout session.' });
   }
 });
 
@@ -496,17 +510,20 @@ app.post('/api/vote', authenticateVoterToken, async (req, res) => {
       return res.status(400).json({ error: 'One or more selected candidates are invalid.' });
     }
 
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
     // Record votes
     for (const [position, candId] of Object.entries(selections)) {
       await db.insert('votes', {
+        student_id: studentId,
         position,
         candidate_id: Number(candId)
       });
     }
 
-    await db.update('students', { id: studentId }, { has_voted: 1 });
+    await db.update('students', { id: studentId }, { has_voted: 1, vote_time: timestamp });
 
-    res.json({ message: 'Your ballot has been securely and anonymously cast.' });
+    res.json({ message: 'Your ballot has been securely cast and recorded.' });
 
   } catch (err) {
     console.error(err);
@@ -643,6 +660,42 @@ app.get('/api/admin/stats', authenticateAdminToken, async (req, res) => {
     const releasedRow = await db.get('settings', { key: 'results_released' });
     const isReleased = releasedRow && releasedRow.value === 'true';
 
+    // 1. Map session audits
+    const voterAudits = students.map(s => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      login_time: s.login_time || 'N/A',
+      vote_time: s.vote_time || 'N/A',
+      logout_time: s.logout_time || 'N/A',
+      has_voted: s.has_voted === 1
+    }));
+
+    // 2. Map detailed ballots (who voted for whom)
+    const ballots = votes.map(v => {
+      const student = students.find(s => s.id === v.student_id);
+      const candidate = candidates.find(c => c.id === v.candidate_id);
+      return {
+        studentId: v.student_id,
+        studentName: student ? student.name : 'Unknown Student',
+        position: v.position,
+        candidateName: candidate ? candidate.name : 'Unknown Candidate'
+      };
+    });
+
+    // 3. Map live winners
+    const grouped = tallies.reduce((acc, c) => {
+      if (!acc[c.position]) acc[c.position] = [];
+      acc[c.position].push(c);
+      return acc;
+    }, {});
+    const liveLeaders = {};
+    for (const [pos, cands] of Object.entries(grouped)) {
+      const maxVotes = Math.max(...cands.map(c => c.vote_count), 0);
+      const leaders = cands.filter(c => c.vote_count === maxVotes && maxVotes > 0);
+      liveLeaders[pos] = leaders.length > 0 ? leaders[0] : null; // Show top leading candidate
+    }
+
     res.json({
       totalVoters: totalStudentsCount,
       votedCount: votedStudentsCount,
@@ -653,6 +706,9 @@ app.get('/api/admin/stats', authenticateAdminToken, async (req, res) => {
       tallies,
       resultsReleased: isReleased,
       blockedVoters,
+      voterAudits,
+      ballots,
+      liveLeaders,
       electionStatus: isReleased ? 'Concluded / Results Released' : 'Active / Voting in Progress'
     });
 
@@ -779,7 +835,20 @@ app.post('/api/admin/reset-election', authenticateAdminToken, async (req, res) =
     }
 
     await db.delete('votes', {});
-    await db.update('students', {}, { has_voted: 0, otp: null, otp_expiry: null, failed_attempts: 0, is_blocked: 0 });
+    await db.update(
+      'students', 
+      {}, 
+      { 
+        has_voted: 0, 
+        otp: null, 
+        otp_expiry: null, 
+        failed_attempts: 0, 
+        is_blocked: 0,
+        login_time: null,
+        vote_time: null,
+        logout_time: null
+      }
+    );
     await db.update('settings', { key: 'results_released' }, { value: 'false' });
 
     res.json({ message: 'Election successfully reset. All votes, uploads, and blocks cleared.' });
