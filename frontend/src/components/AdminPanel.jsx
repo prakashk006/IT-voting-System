@@ -192,6 +192,36 @@ export default function AdminPanel({ token, onLogout }) {
     }
   };
 
+  const handleExportAudits = () => {
+    const filteredAudits = stats?.voterAudits
+      ? stats.voterAudits.filter(v => selectedClass === 'All' || v.class_name === selectedClass)
+      : [];
+    if (filteredAudits.length === 0) return;
+    
+    const headers = ['Roll Number', 'Name', 'Class', 'Email', 'Login Time', 'Vote Time', 'Logout Time', 'Status'];
+    const rows = filteredAudits.map(v => [
+      v.id,
+      v.name,
+      v.class_name || 'N/A',
+      v.email,
+      v.login_time,
+      v.vote_time,
+      v.logout_time,
+      v.has_voted ? 'Voted' : 'Pending'
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
+       
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `IT_Elections_Voter_Logs_${selectedClass}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Group candidate tallies by position for display
   const getGroupedTallies = () => {
     if (!stats || !stats.tallies) return {};
@@ -558,23 +588,32 @@ export default function AdminPanel({ token, onLogout }) {
             Live audit trail displaying precisely when students log in, cast ballots, and log out. All times are displayed in India Standard Time (+05:30).
           </p>
 
-          {/* Class / Section Filters */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-            {(() => {
-              const uniqueClasses = stats?.voterAudits
-                ? ['All', ...new Set(stats.voterAudits.map(v => v.class_name).filter(Boolean))]
-                : ['All'];
-              return uniqueClasses.map(cls => (
-                <button
-                  key={cls}
-                  onClick={() => setSelectedClass(cls)}
-                  className={`btn ${selectedClass === cls ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
-                >
-                  {cls}
-                </button>
-              ));
-            })()}
+          {/* Class / Section Filters & Export Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }} className="mobile-actions-wrapper">
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {(() => {
+                const uniqueClasses = stats?.voterAudits
+                  ? ['All', ...new Set(stats.voterAudits.map(v => v.class_name).filter(Boolean))]
+                  : ['All'];
+                return uniqueClasses.map(cls => (
+                  <button
+                    key={cls}
+                    onClick={() => setSelectedClass(cls)}
+                    className={`btn ${selectedClass === cls ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+                  >
+                    {cls}
+                  </button>
+                ));
+              })()}
+            </div>
+            <button
+              onClick={handleExportAudits}
+              className="btn btn-secondary"
+              style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.8rem', display: 'inline-flex', borderColor: 'var(--color-primary)', color: 'var(--color-primary)', background: 'rgba(37, 99, 235, 0.04)' }}
+            >
+              📥 Export {selectedClass} Logs (CSV)
+            </button>
           </div>
 
           {(() => {

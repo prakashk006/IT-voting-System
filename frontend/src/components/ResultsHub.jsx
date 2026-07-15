@@ -30,6 +30,36 @@ export default function ResultsHub({ onGoToLogin }) {
     return () => clearInterval(interval);
   }, []);
 
+  const handleExportResults = () => {
+    if (!data || !data.results) return;
+
+    const headers = ['Office Bearer Position', 'Candidate Name', 'Class & Year', 'Votes Received', 'Standing'];
+    const rows = [];
+
+    for (const [position, candidates] of Object.entries(data.results)) {
+      candidates.forEach((cand, idx) => {
+        rows.push([
+          position,
+          cand.name,
+          cand.year_class,
+          cand.vote_count,
+          idx === 0 ? 'Leader / Winner' : 'Runner-up'
+        ]);
+      });
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,"
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `IT_Elections_Results_Report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem' }}>
@@ -41,7 +71,7 @@ export default function ResultsHub({ onGoToLogin }) {
   if (error) {
     return (
       <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', maxWidth: '500px', margin: '2rem auto' }}>
-        <h3 style={{ color: '#f87171', marginBottom: '1rem' }}>Failed to retrieve results</h3>
+        <h3 style={{ color: '#ef4444', marginBottom: '1rem' }}>Failed to retrieve results</h3>
         <p style={{ color: 'var(--text-secondary)' }}>{error}</p>
       </div>
     );
@@ -56,10 +86,10 @@ export default function ResultsHub({ onGoToLogin }) {
             display: 'inline-flex',
             padding: '1.25rem',
             borderRadius: '50%',
-            background: 'rgba(59, 130, 246, 0.1)',
+            background: 'rgba(37, 99, 235, 0.08)',
             color: 'var(--color-primary)',
             marginBottom: '1.5rem',
-            border: '1px solid rgba(59, 130, 246, 0.2)'
+            border: '1px solid rgba(37, 99, 235, 0.15)'
           }}
         >
           <ShieldCheck size={36} />
@@ -85,15 +115,15 @@ export default function ResultsHub({ onGoToLogin }) {
   return (
     <div className="animate-fade-in" style={{ width: '100%' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
         <div
           style={{
             display: 'inline-flex',
             padding: '0.5rem 1rem',
             borderRadius: '20px',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: '#34d399',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            color: '#10b981',
             fontSize: '0.85rem',
             fontWeight: '600',
             marginBottom: '1rem',
@@ -106,9 +136,16 @@ export default function ResultsHub({ onGoToLogin }) {
         <h1 className="header-title" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
           IT Department Office Bearers
         </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
           Official winner roster and voting turnout audit report.
         </p>
+        <button 
+          className="btn btn-secondary" 
+          onClick={handleExportResults} 
+          style={{ width: 'auto', padding: '0.55rem 1.25rem', fontSize: '0.85rem', margin: '0 auto', display: 'inline-flex' }}
+        >
+          📥 Export Outcomes Report (CSV)
+        </button>
       </div>
 
       {/* Turnout Statistics Box */}
@@ -127,7 +164,7 @@ export default function ResultsHub({ onGoToLogin }) {
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Total Ballots Cast
             </span>
-            <h3 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'white', marginTop: '0.25rem' }}>
+            <h3 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
               {data.stats.votedCount}
             </h3>
           </div>
@@ -145,7 +182,7 @@ export default function ResultsHub({ onGoToLogin }) {
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Registered IT Voters
             </span>
-            <h3 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'white', marginTop: '0.25rem' }}>
+            <h3 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
               {data.stats.totalVoters}
             </h3>
           </div>
@@ -175,8 +212,8 @@ export default function ResultsHub({ onGoToLogin }) {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  border: '1.5px solid rgba(139, 92, 246, 0.3)',
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(12, 18, 36, 0.6) 100%)',
+                  border: '1.5px solid rgba(37, 99, 235, 0.15)',
+                  background: 'var(--bg-secondary)',
                   position: 'relative'
                 }}
               >
@@ -214,11 +251,11 @@ export default function ResultsHub({ onGoToLogin }) {
                   }}
                 />
 
-                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {position}
                 </span>
 
-                <h3 style={{ fontSize: '1.35rem', fontWeight: '700', margin: '0.25rem 0', color: 'white', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: '700', margin: '0.25rem 0', color: 'var(--text-primary)', textAlign: 'center' }}>
                   {winner.name}
                 </h3>
 
@@ -229,14 +266,14 @@ export default function ResultsHub({ onGoToLogin }) {
                 <div
                   style={{
                     marginTop: '1.25rem',
-                    background: 'rgba(255, 255, 255, 0.04)',
+                    background: 'var(--bg-tertiary)',
                     padding: '0.4rem 1rem',
                     borderRadius: '12px',
                     fontSize: '0.8rem',
                     color: 'var(--text-secondary)'
                   }}
                 >
-                  Votes Received: <strong style={{ color: 'white' }}>{winner.vote_count}</strong>
+                  Votes Received: <strong style={{ color: 'var(--text-primary)' }}>{winner.vote_count}</strong>
                 </div>
               </div>
             ));
@@ -246,7 +283,7 @@ export default function ResultsHub({ onGoToLogin }) {
 
       {/* Button to go to login */}
       <div style={{ textAlign: 'center' }}>
-        <button className="btn btn-secondary" onClick={onGoToLogin} style={{ minWidth: '200px' }}>
+        <button className="btn btn-secondary" onClick={onGoToLogin} style={{ minWidth: '200px', display: 'inline-flex' }}>
           <LogIn size={16} /> Back to Student Login
         </button>
       </div>
