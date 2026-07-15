@@ -44,6 +44,9 @@ app.use('/uploads', express.static(uploadsDir));
 
 const IS_TEST_ENV = process.env.NODE_ENV === 'test';
 
+// Pipedream Webhook option (Free SMTP / Sandbox bypass)
+const PIPEDREAM_WEBHOOK_URL = process.env.PIPEDREAM_WEBHOOK_URL;
+
 // Resend Email API setup (With Dual-Account Failover Support)
 const RESEND_API_KEY_PRIMARY = process.env.RESEND_API_KEY_PRIMARY || process.env.RESEND_API_KEY; // Backward compatible fallback
 const RESEND_API_KEY_SECONDARY = process.env.RESEND_API_KEY_SECONDARY;
@@ -57,6 +60,8 @@ let useSecondaryResend = false;
 // Log operational mail state
 if (IS_TEST_ENV) {
   console.log('📬 Mail Mode: Test Mode active. Simulated OTP logs enabled.');
+} else if (PIPEDREAM_WEBHOOK_URL) {
+  console.log('📬 Mail Mode: HTTP Pipedream Webhook active (100% Free / Sandbox bypass).');
 } else if (resendPrimary) {
   if (resendSecondary) {
     console.log('📬 Mail Mode: Dual Resend API active with automatic failover.');
@@ -66,7 +71,7 @@ if (IS_TEST_ENV) {
     console.log('📬 Mail Mode: Cloud Resend API active (Single Key).');
   }
 } else {
-  console.error('❌ CRITICAL CONFIG WARNING: Resend API Key is missing! Email dispatching will fail in production.');
+  console.error('❌ CRITICAL CONFIG WARNING: Pipedream Webhook or Resend API Key is missing! Email dispatching will fail in production.');
 }
 
 app.use(cors());
@@ -223,7 +228,33 @@ app.post('/api/auth/login-step1', async (req, res) => {
       console.log(`==========================================\n`);
       emailSent = true;
     } 
-    // B. PRODUCTION EMAIL DELIVERY VIA RESEND
+    // B. PIPEDREAM WEBHOOK DISPATCH (100% Free / Outbound SMTP port bypass)
+    else if (PIPEDREAM_WEBHOOK_URL) {
+      try {
+        const response = await fetch(PIPEDREAM_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: student.email,
+            subject: 'IT Office Bearers Election - 2FA OTP Code',
+            studentName: student.name,
+            otp: otp
+          })
+        });
+        
+        if (response.ok) {
+          console.log(`[PIPEDREAM] OTP email successfully dispatched to ${student.email}`);
+          emailSent = true;
+        } else {
+          const errMsg = await response.text();
+          throw new Error(errMsg || `Status ${response.status}`);
+        }
+      } catch (err) {
+        console.error('[PIPEDREAM] Failed to send webhook email:', err.message);
+        sendError = err.message;
+      }
+    }
+    // C. PRODUCTION EMAIL DELIVERY VIA RESEND
     else if (resendPrimary) {
       // 1. Try sending with the current active Resend client (Primary by default)
       if (!useSecondaryResend) {
