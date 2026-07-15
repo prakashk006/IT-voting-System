@@ -43,8 +43,9 @@ const mapToMongoCollection = (table) => {
   return table;
 };
 
-const mapToMongoFields = (fields) => {
+const mapToMongoFields = (fields, table) => {
   if (!fields) return fields;
+  if (table !== 'students') return fields;
   const mapped = {};
   for (const [key, value] of Object.entries(fields)) {
     if (key === 'id') mapped['Roll Number'] = value;
@@ -150,7 +151,7 @@ const dbHelper = {
   get: async (table, criteria = {}) => {
     if (mongoDb) {
       const collName = mapToMongoCollection(table);
-      const mappedCriteria = mapToMongoFields(criteria);
+      const mappedCriteria = mapToMongoFields(criteria, table);
       const query = buildMongoQuery(mappedCriteria);
       const doc = await mongoDb.collection(collName).findOne(query);
       return mapFromMongoDocFields(doc, table);
@@ -174,7 +175,7 @@ const dbHelper = {
   all: async (table, criteria = {}) => {
     if (mongoDb) {
       const collName = mapToMongoCollection(table);
-      const mappedCriteria = mapToMongoFields(criteria);
+      const mappedCriteria = mapToMongoFields(criteria, table);
       const query = buildMongoQuery(mappedCriteria);
       const docs = await mongoDb.collection(collName).find(query).toArray();
       return docs.map(doc => mapFromMongoDocFields(doc, table));
@@ -200,7 +201,7 @@ const dbHelper = {
   insert: async (table, record) => {
     if (mongoDb) {
       const collName = mapToMongoCollection(table);
-      const mappedRecord = mapToMongoFields(record);
+      const mappedRecord = mapToMongoFields(record, table);
 
       // Auto-increment simple integer IDs for candidates
       if (table === 'candidates' && !mappedRecord.id) {
@@ -231,8 +232,8 @@ const dbHelper = {
   update: async (table, criteria, updates) => {
     if (mongoDb) {
       const collName = mapToMongoCollection(table);
-      const mappedCriteria = mapToMongoFields(criteria);
-      const mappedUpdates = mapToMongoFields(updates);
+      const mappedCriteria = mapToMongoFields(criteria, table);
+      const mappedUpdates = mapToMongoFields(updates, table);
       const query = buildMongoQuery(mappedCriteria);
       const result = await mongoDb.collection(collName).updateMany(query, { $set: mappedUpdates });
       return { changes: result.modifiedCount };
@@ -268,7 +269,7 @@ const dbHelper = {
   delete: async (table, criteria) => {
     if (mongoDb) {
       const collName = mapToMongoCollection(table);
-      const mappedCriteria = mapToMongoFields(criteria);
+      const mappedCriteria = mapToMongoFields(criteria, table);
       const query = buildMongoQuery(mappedCriteria);
       const result = await mongoDb.collection(collName).deleteMany(query);
       return { changes: result.deletedCount };

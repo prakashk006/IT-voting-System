@@ -352,16 +352,16 @@ export default function AdminPanel({ token, onLogout }) {
                           {candidates.map(cand => {
                             const percentage = ((cand.vote_count / maxVoteCount) * 100).toFixed(0);
                             return (
-                              <div key={cand.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                              <div key={cand.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
                                 <img
                                   src={window.getAssetUrl ? window.getAssetUrl(cand.photo_url) : cand.photo_url}
                                   alt={cand.name}
-                                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', background: 'var(--bg-tertiary)' }}
+                                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', background: 'var(--bg-tertiary)', flexShrink: 0 }}
                                 />
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.95rem' }}>
-                                    <strong style={{ color: 'var(--text-primary)' }}>{cand.name}</strong>
-                                    <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.95rem', gap: '0.5rem' }}>
+                                    <strong style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cand.name}</strong>
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: '600', flexShrink: 0 }}>
                                       {cand.vote_count} {cand.vote_count === 1 ? 'vote' : 'votes'}
                                     </span>
                                   </div>
@@ -381,11 +381,14 @@ export default function AdminPanel({ token, onLogout }) {
                                   onClick={() => handleDeleteCandidate(cand.id)}
                                   className="btn btn-secondary"
                                   style={{
-                                    padding: '0.4rem',
+                                    padding: '0.5rem',
                                     borderRadius: '6px',
                                     borderColor: 'transparent',
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    color: '#f87171'
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    color: '#ef4444',
+                                    width: 'auto',
+                                    minWidth: 'auto',
+                                    flexShrink: 0
                                   }}
                                   title="Remove Candidate"
                                 >
@@ -454,14 +457,23 @@ export default function AdminPanel({ token, onLogout }) {
 
                 <div className="form-group">
                   <label className="form-label">Office Bearer Position</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-input"
-                    placeholder="e.g. President, Vice-President, Treasurer"
                     value={newPosition}
                     onChange={(e) => setNewPosition(e.target.value)}
                     required
-                  />
+                  >
+                    <option value="">-- Select Position --</option>
+                    <option value="President">President</option>
+                    <option value="Vice President">Vice President</option>
+                    <option value="Secretary">Secretary</option>
+                    <option value="Joint Secretary">Joint Secretary</option>
+                    <option value="Treasurer">Treasurer</option>
+                    <option value="Cultural">Cultural</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Placement">Placement</option>
+                    <option value="Brand Ambassador">Brand Ambassador</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
